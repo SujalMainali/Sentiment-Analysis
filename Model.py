@@ -7,6 +7,9 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 from cleaningFunction import clean_and_lemmatize
 from xgboost import XGBClassifier
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+import tensorflow as tf
 import pandas as pd
 import matplotlib.pyplot as plt
 
@@ -38,7 +41,12 @@ x_train, x_test, y_train, y_test = train_test_split(X, Y, test_size=0.2, random_
 
 #now,lets try different types of model to check their accuracy for this dataset
 
-
+#This is the function to Predict data
+def InputToPredict(model):
+    review=str(input("Enter a review to predict the sentiment:"))
+    review=clean_and_lemmatize(review)
+    prediction=model.predict(cv.transform([review]).toarray())
+    print(f'The sentiment of the review is: {prediction[0]}')
 #First logistics regression with softmax classifier
 def LogisticsRegressionModel(x_train,y_train):
 
@@ -84,19 +92,69 @@ def XGBoostModel(X,Y,x_test,y_test):
     print(confusion_matrix(y_test, y_pred_xgb))
     return xgb_model
 
-def InputToPredict(model):
-    review=str(input("Enter a review to predict the sentiment:"))
-    review=clean_and_lemmatize(review)
-    prediction=model.predict(cv.transform([review]).toarray())
-    print(f'The sentiment of the review is: {prediction[0]}')
 
-model=LogisticsRegressionModel(x_train,y_train)
-InputToPredict(model)
+# model=LogisticsRegressionModel(x_train,y_train)
+# InputToPredict(model)
+
 
 
 
 
 #The accuracy is slightly misleading because the prediction is more likely to be around their correct value like 5 rating being around 4 or 5.
 model=XGBoostModel(X=x_train,Y=y_train,x_test=x_test,y_test=y_test)
-
 InputToPredict(model)
+
+#Now lets try using Neural Network to predict the sentiment
+
+def NeuralNetworkModel(X, Y, x_test, y_test):
+    # Prepare the dataset with batching
+    dataset = tf.data.Dataset.from_tensor_slices((X, Y))
+    dataset = dataset.batch(32)  # Load in batches of 32
+
+    # Prepare the test dataset as well
+    test_dataset = tf.data.Dataset.from_tensor_slices((x_test, y_test))
+    test_dataset = test_dataset.batch(32)
+
+    # Define the Neural Network model
+    Network = Sequential(
+        [
+            Dense(100, activation='relu', input_shape=(1000,)),  # Input shape: 1000 features
+            Dense(50, activation='relu'),
+            Dense(5, activation='softmax'),
+        ]
+    )
+
+    Network.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+
+    # Train the model
+    Network.fit(dataset, epochs=10, validation_data=test_dataset)
+
+    # Evaluate the model
+    loss, accuracy = Network.evaluate(test_dataset)
+    print(f'Neural Network Accuracy: {accuracy:.2f}')
+
+    # Make predictions on the test set
+    y_pred_nn = Network.predict(x_test)
+    y_pred_nn_classes = y_pred_nn.argmax(axis=-1)
+
+    # Evaluate the Neural Network model
+    print('Neural Network Classification Report:')
+    print(classification_report(y_test, y_pred_nn_classes))
+
+    print('Neural Network Confusion Matrix:')
+    print(confusion_matrix(y_test, y_pred_nn_classes))
+
+    return Network
+
+# Example call to the function
+#The accuracy of this Neural Network is less than the XGBoost so the XGBoost is the best model for this dataset.
+
+# Network = NeuralNetworkModel(X=x_train, Y=y_train, x_test=x_test, y_test=y_test)
+# InputToPredict(Network)
+
+
+#This is the function to save effective models
+def save_model(model, filename):
+    model.save(filename)
+    print(f'Model saved to {filename}')
+

@@ -1,3 +1,5 @@
 SentimentEnv/
-
 __pycache__/
+Reviews.csv
+ModifiedReviews.csv
+CleanedLemmatizedReviews-*.csv

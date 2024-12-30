@@ -45,7 +45,7 @@ def clean_each_partition(partition):
 #The pandas dataframe is split into multiple partitions and each partition is processed in parallel, we can specify the max no. of partitions.
 #The partitions also helps in memeory management as we can easily run out of memory when processing the dataset but process small partitions doesnt overwhem memory.
 
-ddf = dd.from_pandas(df, npartitions=20)
+ddf = dd.from_pandas(df, npartitions=100)
 
 
 
